@@ -1,0 +1,13 @@
+<map id="drivers/amplifiers/ada4250/iio_ada4250.c" name="drivers/amplifiers/ada4250/iio_ada4250.c">
+<area shape="rect" id="node1" title="Implementation of ada4250 IIO Driver." alt="" coords="96,5,272,47"/>
+<area shape="rect" id="node2" href="$iio__ada4250_8h.html" title="Header file of ada4250 iio." alt="" coords="65,95,178,121"/>
+<area shape="rect" id="node4" href="$ada4250_8h.html" title="Header file for ada4250 Driver." alt="" coords="271,95,361,121"/>
+<area shape="rect" id="node3" title=" " alt="" coords="5,169,99,196"/>
+<area shape="rect" id="node5" title=" " alt="" coords="287,244,358,271"/>
+<area shape="rect" id="node6" title=" " alt="" coords="123,169,191,196"/>
+<area shape="rect" id="node7" title=" " alt="" coords="483,244,565,271"/>
+<area shape="rect" id="node8" href="$spi_8h.html" title="Header file of SPI Interface." alt="" coords="353,169,407,196"/>
+<area shape="rect" id="node9" href="$gpio_8h.html" title="Header file of GPIO Interface." alt="" coords="215,169,278,196"/>
+<area shape="rect" id="node10" href="$util_8h.html" title="Implementation of utility functions." alt="" coords="431,169,486,196"/>
+<area shape="rect" id="node11" title=" " alt="" coords="387,244,458,271"/>
+</map>

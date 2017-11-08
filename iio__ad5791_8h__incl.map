@@ -1,0 +1,12 @@
+<map id="drivers/dac/ad5791/iio_ad5791.h" name="drivers/dac/ad5791/iio_ad5791.h">
+<area shape="rect" id="node1" title="Header of AD5791 IIO Driver." alt="" coords="37,5,184,47"/>
+<area shape="rect" id="node2" title=" " alt="" coords="8,95,59,121"/>
+<area shape="rect" id="node3" href="$util_8h.html" title="Implementation of utility functions." alt="" coords="83,95,138,121"/>
+<area shape="rect" id="node7" href="$ad5791_8h.html" title="Header file of AD5791 Driver." alt="" coords="271,95,353,121"/>
+<area shape="rect" id="node4" title=" " alt="" coords="277,244,347,271"/>
+<area shape="rect" id="node5" title=" " alt="" coords="25,169,95,196"/>
+<area shape="rect" id="node6" title=" " alt="" coords="120,169,203,196"/>
+<area shape="rect" id="node8" href="$delay_8h.html" title="Header file of Delay functions." alt="" coords="278,169,346,196"/>
+<area shape="rect" id="node9" href="$gpio_8h.html" title="Header file of GPIO Interface." alt="" coords="370,169,433,196"/>
+<area shape="rect" id="node10" href="$spi_8h.html" title="Header file of SPI Interface." alt="" coords="457,169,511,196"/>
+</map>

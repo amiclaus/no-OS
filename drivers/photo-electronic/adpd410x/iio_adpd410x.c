@@ -45,8 +45,99 @@
 #include "util.h"
 #include "error.h"
 
+
+/**
+ * @brief Set device sampling frequency.
+ * @param device - Device driver descriptor.
+ * @param buf - Input buffer.
+ * @param len - Length of the input buffer (not used in this case).
+ * @param channel - IIO channel information.
+ * @return Number of bytes printed in the output buffer, or negative error code.
+ */
+static ssize_t adpd410x_iio_set_sampling_freq(void *device, char *buf, size_t len,
+				     const struct iio_ch_info *channel, intptr_t priv)
+{
+	struct adpd410x_dev *dev = (struct adpd410x_dev *)device;
+	int32_t ret;
+
+	uint32_t freq = srt_to_uint32(buf);
+
+	ret = adpd410x_set_sampling_freq(dev, freq);
+	if (ret != SUCCESS)
+		return ret;
+
+	return len;
+}
+
+/**
+ * @brief Set number of active time slots.
+ * @param device - Device driver descriptor.
+ * @param buf - Input buffer.
+ * @param len - Length of the input buffer (not used in this case).
+ * @param channel - IIO channel information.
+ * @return Number of bytes printed in the output buffer, or negative error code.
+ */
+static ssize_t adpd410x_iio_set_last_timeslot(void *device, char *buf, size_t len,
+				     const struct iio_ch_info *channel, intptr_t priv)
+{
+	struct adpd410x_dev *dev = (struct adpd410x_dev *)device;
+	int32_t ret;
+
+	enum adpd410x_timeslots timeslot_no = srt_to_uint32(buf);
+
+	ret = adpd410x_set_last_timeslot(dev, timeslot_no);
+	if (ret != SUCCESS)
+		return ret;
+
+	return len;
+}
+
+/**
+ * @brief Set device sampling frequency.
+ * @param device - Device driver descriptor.
+ * @param buf - Input buffer.
+ * @param len - Length of the input buffer (not used in this case).
+ * @param channel - IIO channel information.
+ * @return Number of bytes printed in the output buffer, or negative error code.
+ */
+static ssize_t adpd410x_iio_set_opmode(void *device, char *buf, size_t len,
+				     const struct iio_ch_info *channel, intptr_t priv)
+{
+	struct adpd410x_dev *dev = (struct adpd410x_dev *)device;
+	int32_t ret;
+
+	enum adpd410x_opmode mode = srt_to_uint32(buf);
+
+	ret = adpd410x_set_opmode(dev, mode);
+	if (ret != SUCCESS)
+		return ret;
+
+	return len;
+}
+
+/** IIO attributes */
+static struct iio_attribute adpd410x_iio_attributes[] = {
+	{
+		.name = "sampling_frequency",
+		.show = NULL
+		.store = adpd410x_iio_set_sampling_freq,
+	},
+	{
+		.name = "last_timeslot",
+		.show = NULL
+		.store = adpd410x_iio_set_last_timeslot,
+	},
+	{
+		.name = "operation_mode",
+		.show = NULL
+		.store = adpd410x_iio_set_opmode,
+	},
+	END_ATTRIBUTES_ARRAY,
+};
+
 /** IIO Descriptor */
 struct iio_device const adpd410x_iio_descriptor = {
+	.attributes = adpd410x_iio_attributes,
 	.debug_reg_read = (int32_t (*)())adpd410x_reg_read,
 	.debug_reg_write = (int32_t (*)())adpd410x_reg_write,
 };

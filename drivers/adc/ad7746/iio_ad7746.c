@@ -28,11 +28,13 @@ static struct iio_attribute ad7746_iio_vin_attrs[] = {
 	},
 	{
 		.name = "scale",
+		.shared = IIO_SHARED_BY_TYPE,
 		.show = NULL,
 		.store = NULL
 	},
 	{
-		.name = "samp_freq",
+		.name = "sampling_frequency",
+		.shared = IIO_SHARED_BY_TYPE,
 		.show = NULL,
 		.store = NULL
 	},
@@ -47,6 +49,7 @@ static struct iio_attribute ad7746_iio_cin_attrs[] = {
 	},
 	{
 		.name = "scale",
+		.shared = IIO_SHARED_BY_TYPE,
 		.show = NULL,
 		.store = NULL
 	},
@@ -56,7 +59,8 @@ static struct iio_attribute ad7746_iio_cin_attrs[] = {
 		.store = NULL
 	},
 	{
-		.name = "samp_freq",
+		.name = "sampling_frequency",
+		.shared = IIO_SHARED_BY_TYPE,
 		.show = NULL,
 		.store = NULL
 	},
@@ -67,6 +71,7 @@ static struct iio_attribute ad7746_iio_cin_attrs[] = {
 	},
 	{
 		.name = "calibbias",
+		.shared = IIO_SHARED_BY_TYPE,
 		.show = NULL,
 		.store = NULL
 	},
@@ -75,7 +80,7 @@ static struct iio_attribute ad7746_iio_cin_attrs[] = {
 
 static struct iio_attribute ad7746_iio_temp_attrs[] = {
 	{
-		.name = "processed",
+		.name = "input",
 		.show = NULL,
 		.store = NULL
 	},
@@ -99,16 +104,16 @@ static struct iio_channel ad7746_channels[] = {
 		.indexed = 1,
 		.channel = 0,
 		.attributes = ad7746_iio_vin_attrs,
-		//.address = AD7746_REG_VT_DATA_HIGH << 8 | AD7746_VIN_EXT_VIN,
+		.address = AD7746_REG_VT_DATA_HIGH << 8 | AD7746_VIN_EXT_VIN,
 		.ch_out = false,
 	},
 	[VIN_VDD] = {
 		.ch_type = IIO_VOLTAGE,
 		.indexed = 1,
 		.channel = 1,
-		//.extend_name = "supply",
+		.extend_name = "supply",
 		.attributes = ad7746_iio_vin_attrs,
-		//.address = AD7746_REG_VT_DATA_HIGH << 8 | AD7746_VTMD_VDD_MON,
+		.address = AD7746_REG_VT_DATA_HIGH << 8 | AD7746_VTMD_VDD_MON,
 		.ch_out = false,
 	},
 	[TEMP_INT] = {
@@ -116,7 +121,7 @@ static struct iio_channel ad7746_channels[] = {
 		.indexed = 1,
 		.channel = 0,
 		.attributes = ad7746_iio_temp_attrs,
-		//.address = AD7746_REG_VT_DATA_HIGH << 8 | AD7746_VTMD_INT_TEMP,
+		.address = AD7746_REG_VT_DATA_HIGH << 8 | AD7746_VTMD_INT_TEMP,
 		.ch_out = false,
 	},
 	[TEMP_EXT] = {
@@ -124,7 +129,7 @@ static struct iio_channel ad7746_channels[] = {
 		.indexed = 1,
 		.channel = 1,
 		.attributes = ad7746_iio_temp_attrs,
-		//.address = AD7746_REG_VT_DATA_HIGH << 8 | AD7746_VTMD_EXT_TEMP,
+		.address = AD7746_REG_VT_DATA_HIGH << 8 | AD7746_VTMD_EXT_TEMP,
 		.ch_out = false,
 	},
 	[CIN1] = {
@@ -132,7 +137,7 @@ static struct iio_channel ad7746_channels[] = {
 		.indexed = 1,
 		.channel = 0,
 		.attributes = ad7746_iio_cin_attrs,
-		//.address = AD7746_REG_CAP_DATA_HIGH << 8,
+		.address = AD7746_REG_CAP_DATA_HIGH << 8,
 		.ch_out = false,
 	},
 	[CIN1_DIFF] = {
@@ -142,7 +147,7 @@ static struct iio_channel ad7746_channels[] = {
 		.channel = 0,
 		.channel2 = 2,
 		.attributes = ad7746_iio_cin_attrs,
-		// .address = AD7746_REG_CAP_DATA_HIGH << 8 | AD7746_CAPSETUP_CAPDIFF_MSK,
+		 .address = AD7746_REG_CAP_DATA_HIGH << 8 | AD7746_CAPSETUP_CAPDIFF_MSK,
 		.ch_out = false,
 	},
 	[CIN2] = {
@@ -150,7 +155,7 @@ static struct iio_channel ad7746_channels[] = {
 		.indexed = 1,
 		.channel = 1,
 		.attributes = ad7746_iio_cin_attrs,
-		//.address = AD7746_REG_CAP_DATA_HIGH << 8 | AD7746_CAPSETUP_CIN2_MSK,
+		.address = AD7746_REG_CAP_DATA_HIGH << 8 | AD7746_CAPSETUP_CIN2_MSK,
 		.ch_out = false,
 	},
 	[CIN2_DIFF] = {
@@ -160,7 +165,7 @@ static struct iio_channel ad7746_channels[] = {
 		.channel = 1,
 		.channel2 = 3,
 		.attributes = ad7746_iio_cin_attrs,
-		//.address = AD7746_REG_CAP_DATA_HIGH << 8 | AD7746_CAPSETUP_CAPDIFF_MSK | AD7746_CAPSETUP_CIN2_MSK,
+		.address = AD7746_REG_CAP_DATA_HIGH << 8 | AD7746_CAPSETUP_CAPDIFF_MSK | AD7746_CAPSETUP_CIN2_MSK,
 		.ch_out = false,
 	}
 };
@@ -168,12 +173,12 @@ static struct iio_channel ad7746_channels[] = {
 struct iio_device iio_ad7746_device = {
 	.num_ch = ARRAY_SIZE(ad7746_channels),
 	.channels = ad7746_channels,
-	// .attributes = NULL,
-	// .debug_attributes = NULL,
-	// .buffer_attributes = NULL,
+	.attributes = NULL,
+	.debug_attributes = NULL,
+	.buffer_attributes = NULL,
 	// .prepare_transfer = iio_ad7124_update_active_channels,
 	// .end_transfer = iio_ad7124_close_channels,
-	// .read_dev = (int32_t (*)())iio_ad7124_read_samples,
+	// .read_dev = (int32_t (*)())iio_ad7746_read_samples,
 	.debug_reg_read = (int32_t (*)())ad7746_read_register2,
 	.debug_reg_write = (int32_t (*)())ad7746_write_register2
 };

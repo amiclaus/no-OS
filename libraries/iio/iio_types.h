@@ -80,10 +80,12 @@ enum iio_modifier {
  * @brief Structure holding channel attributess.
  */
 struct iio_ch_info {
-	/** Channel number */
+	/** Channel number. TODO: refactor out the ch_ prefix. */
 	int16_t ch_num;
-	/** Channel type: input/output */
+	/** Channel direction: input/output. TODO: refactor out the ch_ prefix. */
 	bool ch_out;
+	/** Channel type */
+	enum iio_chan_type type;
 };
 
 #define END_ATTRIBUTES_ARRAY {.name = NULL}

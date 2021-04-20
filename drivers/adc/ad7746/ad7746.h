@@ -182,6 +182,8 @@ struct ad7746_init_param {
 struct ad7746_dev {
 	i2c_desc *i2c_dev;
 	uint8_t buf[AD7746_NUM_REGISTERS + 1u];
+	uint8_t capdac[2][2];
+	int8_t capdac_set;
 	struct ad7746_setup setup;
 };
 

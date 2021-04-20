@@ -76,6 +76,8 @@ int32_t ad7746_init(struct ad7746_dev **device,
 	// the device does not acknowledge for max: 200us after a reset
 	udelay(200);
 
+	dev->capdac_set = -1;
+
 	ret = ad7746_set_cap(dev, init_param->setup.cap);
 	if (ret < 0)
 		goto error_2;
@@ -465,6 +467,9 @@ int32_t ad7746_get_vt_data(struct ad7746_dev *dev, uint32_t *vt_data)
 		   ((uint32_t)dev->buf[1] << 8) |
 		   dev->buf[0];
 
+	if (dev->setup.config.md == AD7746_MODE_SINGLE)
+		dev->setup.config.md = AD7746_MODE_IDLE;
+
 	return SUCCESS;
 }
 
@@ -503,6 +508,9 @@ int32_t ad7746_get_cap_data(struct ad7746_dev *dev, uint32_t *cap_data)
 	*cap_data = ((uint32_t)dev->buf[0] << 16) |
 		    ((uint32_t)dev->buf[1] << 8) |
 		    dev->buf[0];
+
+	if (dev->setup.config.md == AD7746_MODE_SINGLE)
+		dev->setup.config.md = AD7746_MODE_IDLE;
 
 	return SUCCESS;
 }

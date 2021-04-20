@@ -652,6 +652,7 @@ static ssize_t iio_ch_read_attr(const char *device_id, const char *channel,
 
 	ch_info.ch_out = ch_out;
 	ch_info.ch_num = ch->channel;
+	ch_info.type = ch->ch_type;
 	params.buf = buf;
 	params.len = len;
 	params.dev_instance = dev->dev_instance;

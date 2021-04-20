@@ -73,7 +73,7 @@ int main(void)
 		.slave_address = AD7746_ADDRESS,
 	};
 	adcip.setup = (struct ad7746_setup) {
-		.cap = {
+		/*.cap = {
 			.capen = true,
 			.cin2 = true,
 			.capdiff = false,
@@ -85,19 +85,17 @@ int main(void)
 			.extref = false,
 			.vtshort = false,
 			.vtchop = true
-		},
+		},*/
 		.exc = {
-			.clkctrl = false,
-			.excon = false,
-			.excb = AD7746_EXC_PIN_DISABLED,
+			.excb = AD7746_EXC_PIN_NORMAL,
 			.exca = AD7746_EXC_PIN_NORMAL,
 			.exclvl = AD7746_EXCLVL_4_DIV_8
 		},
-		.config = {
+		/*.config = {
 			.vtf = 0,
 			.capf = 0,
-			.md = AD7746_MODE_CONT
-		}
+			.md = AD7746_MODE_SINGLE
+		}*/
 	};
 
 	pr_info("Hello!\n");

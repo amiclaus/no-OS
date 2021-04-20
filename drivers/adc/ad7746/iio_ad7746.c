@@ -166,7 +166,35 @@ static ssize_t ad7746_iio_read_raw(void *device, char *buf, size_t len,
 		return -EINVAL;
 	}
 
-	return snprintf(buf, len, "%d", value);
+	return iio_format_value(buf, len, IIO_VAL_INT, 1, &value);
+}
+
+static ssize_t ad7746_iio_read_scale(void *device, char *buf, size_t len,
+					const struct iio_ch_info *channel, intptr_t priv)
+{
+	struct ad7746_dev *desc = (struct ad7746_dev *)device;
+	int32_t valt;
+	int32_t vals[2];
+
+	switch (channel->type) {
+	case IIO_CAPACITANCE:
+		/* 8.192pf / 2^24 */
+		vals[0] =  0;
+		vals[1] = 488;
+		valt = IIO_VAL_INT_PLUS_NANO;
+		break;
+	case IIO_VOLTAGE:
+		/* 1170mV / 2^23 */
+		vals[0] = 1170;
+		vals[1] = 23;
+		valt = IIO_VAL_FRACTIONAL_LOG2;
+		break;
+	default:
+		return -EINVAL;
+		break;
+	}
+
+	return iio_format_value(buf, len, valt, 2, vals);
 }
 
 static struct iio_attribute ad7746_iio_vin_attrs[] = {
@@ -178,7 +206,7 @@ static struct iio_attribute ad7746_iio_vin_attrs[] = {
 	{
 		.name = "scale",
 		.shared = IIO_SHARED_BY_TYPE,
-		.show = NULL,
+		.show = ad7746_iio_read_scale,
 		.store = NULL
 	},
 	{
@@ -199,7 +227,7 @@ static struct iio_attribute ad7746_iio_cin_attrs[] = {
 	{
 		.name = "scale",
 		.shared = IIO_SHARED_BY_TYPE,
-		.show = NULL,
+		.show = ad7746_iio_read_scale,
 		.store = NULL
 	},
 	{

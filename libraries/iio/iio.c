@@ -525,6 +525,60 @@ static int32_t debug_reg_write(struct iio_interface *dev, const char *buf,
 	return len;
 }
 
+ssize_t iio_format_value(char *buf, size_t len, unsigned int type,
+				  int size, const int *vals)
+{
+	uint64_t tmp;
+	int32_t tmp0, tmp1;
+	bool scale_db = false;
+
+	switch (type) {
+	case IIO_VAL_INT:
+		return snprintf(buf, len, "%d", vals[0]);
+	case IIO_VAL_INT_PLUS_MICRO_DB:
+		scale_db = true;
+		/* fall through */
+	case IIO_VAL_INT_PLUS_MICRO:
+		if (vals[1] < 0)
+			return snprintf(buf, len, "-%d.%06u%s", abs(vals[0]),
+					-vals[1], scale_db ? " dB" : "");
+		else
+			return snprintf(buf, len, "%d.%06u%s", vals[0], vals[1],
+					scale_db ? " dB" : "");
+	case IIO_VAL_INT_PLUS_NANO:
+		if (vals[1] < 0)
+			return snprintf(buf, len, "-%d.%09u", abs(vals[0]),
+					-vals[1]);
+		else
+			return snprintf(buf, len, "%d.%09u", vals[0], vals[1]);
+	case IIO_VAL_FRACTIONAL:
+		tmp = div_s64((int64_t)vals[0] * 1000000000LL, vals[1]);
+		tmp1 = vals[1];
+		tmp0 = (int32_t)div_s64_rem(tmp, 1000000000, &tmp1);
+		return snprintf(buf, len, "%d.%09u", tmp0, abs(tmp1));
+	case IIO_VAL_FRACTIONAL_LOG2:
+		tmp = shift_right((int64_t)vals[0] * 1000000000LL, vals[1]);
+		tmp0 = (int32_t)div_s64_rem(tmp, 1000000000LL, &tmp1);
+		return snprintf(buf, len, "%d.%09u", tmp0, abs(tmp1));
+	case IIO_VAL_INT_MULTIPLE:
+	{
+		int32_t i;
+		uint32_t l = 0;
+
+		for (i = 0; i < size; ++i) {
+			l += snprintf(&buf[l], len - l, "%d ", vals[i]);
+			if (l >= len)
+				break;
+		}
+		return l;
+	}
+	case IIO_VAL_CHAR:
+		return snprintf(buf, len, "%c", (char)vals[0]);
+	default:
+		return 0;
+	}
+}
+
 /**
  * @brief Read global attribute of a device.
  * @param device - String containing device name.

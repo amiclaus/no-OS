@@ -197,6 +197,38 @@ static ssize_t ad7746_iio_read_scale(void *device, char *buf, size_t len,
 	return iio_format_value(buf, len, valt, 2, vals);
 }
 
+static ssize_t ad7746_iio_read_offset(void *device, char *buf, size_t len,
+					const struct iio_ch_info *channel, intptr_t priv)
+{
+	struct ad7746_dev *desc = (struct ad7746_dev *)device;
+	int32_t value;
+
+	value = (desc->capdac[channel->ch_num][channel->differential] & AD7746_CAPDAC_DACP_MSK) * 338646;
+
+	return iio_format_value(buf, len, IIO_VAL_INT, 1, &value);
+}
+
+static ssize_t ad7746_iio_read_samp_freq(void *device, char *buf, size_t len,
+					const struct iio_ch_info *channel, intptr_t priv)
+{
+	struct ad7746_dev *desc = (struct ad7746_dev *)device;
+	int32_t value;
+
+	switch (channel->type) {
+	case IIO_CAPACITANCE:
+		value = ad7746_cap_filter_rate_table[desc->setup.config.capf][0];
+		break;
+	case IIO_VOLTAGE:
+		value = ad7746_cap_filter_rate_table[desc->setup.config.vtf][0];
+		break;
+	default:
+		return -EINVAL;
+		break;
+	}
+
+	return iio_format_value(buf, len, IIO_VAL_INT, 1, &value);
+}
+
 static struct iio_attribute ad7746_iio_vin_attrs[] = {
 	{
 		.name = "raw",
@@ -212,7 +244,7 @@ static struct iio_attribute ad7746_iio_vin_attrs[] = {
 	{
 		.name = "sampling_frequency",
 		.shared = IIO_SHARED_BY_TYPE,
-		.show = NULL,
+		.show = ad7746_iio_read_samp_freq,
 		.store = NULL
 	},
 	END_ATTRIBUTES_ARRAY
@@ -232,13 +264,13 @@ static struct iio_attribute ad7746_iio_cin_attrs[] = {
 	},
 	{
 		.name = "offset",
-		.show = NULL,
+		.show = ad7746_iio_read_offset,
 		.store = NULL
 	},
 	{
 		.name = "sampling_frequency",
 		.shared = IIO_SHARED_BY_TYPE,
-		.show = NULL,
+		.show = ad7746_iio_read_samp_freq,
 		.store = NULL
 	},
 	{

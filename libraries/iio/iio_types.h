@@ -98,6 +98,8 @@ struct iio_ch_info {
 	bool ch_out;
 	/** Channel type */
 	enum iio_chan_type type;
+	/** Differential channel indicator */
+	bool differential;
 };
 
 #define END_ATTRIBUTES_ARRAY {.name = NULL}

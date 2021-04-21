@@ -64,7 +64,8 @@ INCS += $(INCLUDE)/fifo.h						\
 	$(PLATFORM_DRIVERS)/uart_extra.h				\
 	$(NO-OS)/iio/iio_ad9361/iio_ad9361.h				\
 	$(NO-OS)/iio/iio_axi_adc/iio_axi_adc.h				\
-	$(NO-OS)/iio/iio_axi_dac/iio_axi_dac.h
+	$(NO-OS)/iio/iio_axi_dac/iio_axi_dac.h	\
+	$(NO-OS)/iio/iio_app/iio_app.h
 endif
 ifeq (xilinx,$(strip $(PLATFORM)))
 SRCS +=	$(PLATFORM_DRIVERS)/irq.c

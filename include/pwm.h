@@ -70,6 +70,8 @@ struct pwm_init_param {
 	uint32_t period_ns;
 	/** PWM generator duty cycle */
 	uint32_t duty_cycle_ns;
+	/** PWM generator offset */
+	uint32_t offset_ns;
 	/** PWM generator polarity */
 	enum pwm_polarity polarity;
 	/** PWM extra parameters (device specific) */
@@ -87,6 +89,8 @@ struct pwm_desc {
 	uint32_t period_ns;
 	/** PWM generator duty cycle */
 	uint32_t duty_cycle_ns;
+	/** PWM generator offset */
+	uint32_t offset_ns;
 	/** PWM generator polarity */
 	enum pwm_polarity polarity;
 	/** PWM generator enabled */
@@ -126,6 +130,14 @@ int32_t pwm_set_duty_cycle(struct pwm_desc *desc,
 /* Get period of PWM generator device */
 int32_t pwm_get_duty_cycle(struct pwm_desc *desc,
 			   uint32_t *duty_cycle_ns);
+
+/* Set duty cycle of PWM generator device */
+int32_t pwm_set_offset(struct pwm_desc *desc,
+		       uint32_t offset_ns);
+
+/* Get period of PWM generator device */
+int32_t pwm_get_offset(struct pwm_desc *desc,
+		       uint32_t *offset_ns);
 
 /* Set polarity of PWM generator device */
 int32_t pwm_set_polarity(struct pwm_desc *desc,

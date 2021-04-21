@@ -228,6 +228,47 @@ int32_t pwm_get_duty_cycle(struct pwm_desc *desc, uint32_t *duty_cycle_ns)
 }
 
 /**
+ * @brief Set offset of PWM generator device.
+ *
+ * @param [in] desc - Decriptor containing PWM generator parameters.
+ * @param [in] offset_ns - PWM offset.
+ * @return \ref SUCCESS in case of success, \ref FAILURE otherwise.
+ */
+int32_t pwm_set_offset(struct pwm_desc *desc, uint32_t offset_ns)
+{
+	struct axi_pwm_desc *axi_desc = desc->extra;
+	uint32_t tmp, offset_cnt;
+	int32_t ret;
+
+	/* Downscale by 1000 */
+	tmp = (axi_desc->ref_clock_Hz / NSEC_PER_USEC) * offset_ns;
+	offset_cnt = DIV_ROUND_UP(tmp, USEC_PER_SEC);
+	ret = axi_io_write(axi_desc->base_addr,
+			   AXI_PWMGEN_CHX_OFFSET(axi_desc->channel),
+			   offset_cnt);
+	if (ret != SUCCESS)
+		return ret;
+
+	desc->offset_ns = offset_ns;
+
+	return SUCCESS;
+}
+
+/**
+ * @brief Get offset of PWM generator device.
+ *
+ * @param [in] desc - Decriptor containing PWM generator parameters.
+ * @param [out] offset_ns - PWM offset.
+ * @return \ref SUCCESS in case of success, \ref FAILURE otherwise.
+ */
+int32_t pwm_get_offset(struct pwm_desc *desc, uint32_t *offset_ns)
+{
+	*offset_ns = desc->offset_ns;
+
+	return SUCCESS;
+}
+
+/**
  * @brief Initialize the pwm axi generator and the handler associated with it.
  *
  * @param [out] desc - Decriptor containing PWM generator parameters.
@@ -292,6 +333,10 @@ int32_t pwm_init(struct pwm_desc **desc,
 		goto error_xdesc;
 
 	ret = pwm_set_duty_cycle(pwm_desc, pwm_desc->duty_cycle_ns);
+	if (ret != SUCCESS)
+		goto error_xdesc;
+
+	ret = pwm_set_offset(pwm_desc, pwm_desc->offset_ns);
 	if (ret != SUCCESS)
 		goto error_xdesc;
 

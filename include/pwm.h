@@ -131,11 +131,11 @@ int32_t pwm_set_duty_cycle(struct pwm_desc *desc,
 int32_t pwm_get_duty_cycle(struct pwm_desc *desc,
 			   uint32_t *duty_cycle_ns);
 
-/* Set duty cycle of PWM generator device */
+/* Set the offset of PWM generator device */
 int32_t pwm_set_offset(struct pwm_desc *desc,
 		       uint32_t offset_ns);
 
-/* Get period of PWM generator device */
+/* Get the offset of PWM generator device */
 int32_t pwm_get_offset(struct pwm_desc *desc,
 		       uint32_t *offset_ns);
 

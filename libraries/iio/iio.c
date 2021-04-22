@@ -324,7 +324,7 @@ static inline struct iio_channel *iio_get_channel(const char *channel,
 		struct iio_device *desc, bool ch_out)
 {
 	int16_t i = 0;
-	char	ch_id[20];
+	char	ch_id[64];
 
 	while (i < desc->num_ch) {
 		_print_ch_id(ch_id, &desc->channels[i]);
@@ -525,14 +525,125 @@ static int32_t debug_reg_write(struct iio_interface *dev, const char *buf,
 	return len;
 }
 
-ssize_t iio_format_value(char *buf, size_t len, unsigned int type,
-				  int size, const int *vals)
+static int __iio_str_to_fixpoint(const char *str, int fract_mult,
+				 int *integer, int *fract, bool scale_db)
+{
+	int i = 0, f = 0;
+	bool integer_part = true, negative = false;
+
+	if (fract_mult == 0) {
+		*fract = 0;
+
+		*integer = strtol(str, NULL, 0);
+		return 0;
+	}
+
+	if (str[0] == '-') {
+		negative = true;
+		str++;
+	} else if (str[0] == '+') {
+		str++;
+	}
+
+	while (*str) {
+		if ('0' <= *str && *str <= '9') {
+			if (integer_part) {
+				i = i * 10 + *str - '0';
+			} else {
+				f += fract_mult * (*str - '0');
+				fract_mult /= 10;
+			}
+		} else if (*str == '\n') {
+			if (*(str + 1) == '\0')
+				break;
+			else
+				return -EINVAL;
+		} else if (!strncmp(str, " dB", sizeof(" dB") - 1) && scale_db) {
+			/* Ignore the dB suffix */
+			str += sizeof(" dB") - 1;
+			continue;
+		} else if (!strncmp(str, "dB", sizeof("dB") - 1) && scale_db) {
+			/* Ignore the dB suffix */
+			str += sizeof("dB") - 1;
+			continue;
+		} else if (*str == '.' && integer_part) {
+			integer_part = false;
+		} else {
+			return -EINVAL;
+		}
+		str++;
+	}
+
+	if (negative) {
+		if (i)
+			i = -i;
+		else
+			f = -f;
+	}
+
+	*integer = i;
+	*fract = f;
+
+	return 0;
+}
+
+int32_t iio_parse_value(const char *buf, enum iio_val fmt, int32_t *val, int32_t *val2)
+{
+	int ret = 0;
+	int fract_mult = 100000;
+	int integer, fract = 0;
+	bool is_char = false;
+	bool scale_db = false;
+
+	switch (fmt) {
+	case IIO_VAL_INT:
+		fract_mult = 0;
+		break;
+	case IIO_VAL_INT_PLUS_MICRO_DB:
+		scale_db = true;
+		/* fall through */
+	case IIO_VAL_INT_PLUS_MICRO:
+		fract_mult = 100000;
+		break;
+	case IIO_VAL_INT_PLUS_NANO:
+		fract_mult = 100000000;
+		break;
+	case IIO_VAL_CHAR:
+		is_char = true;
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	if (is_char) {
+		char ch;
+
+		if (sscanf(buf, "%c", &ch) != 1)
+			return -EINVAL;
+		integer = ch;
+	} else {
+		ret = __iio_str_to_fixpoint(buf, fract_mult, &integer, &fract,
+					    scale_db);
+		if (ret)
+			return ret;
+	}
+
+	if (val)
+		*val = integer;
+	if (val2)
+		*val2 = fract;
+
+	return ret;
+}
+
+ssize_t iio_format_value(char *buf, size_t len, enum iio_val fmt,
+				  int32_t size, int32_t *vals)
 {
 	uint64_t tmp;
 	int32_t tmp0, tmp1;
 	bool scale_db = false;
 
-	switch (type) {
+	switch (fmt) {
 	case IIO_VAL_INT:
 		return snprintf(buf, len, "%d", vals[0]);
 	case IIO_VAL_INT_PLUS_MICRO_DB:
@@ -746,6 +857,8 @@ static ssize_t iio_ch_write_attr(const char *device_id, const char *channel,
 
 	ch_info.ch_out = ch_out;
 	ch_info.ch_num = ch->channel;
+	ch_info.type = ch->ch_type;
+	ch_info.differential = ch->diferential;
 	params.buf = (char *)buf;
 	params.len = len;
 	params.dev_instance = dev->dev_instance;

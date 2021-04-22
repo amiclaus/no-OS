@@ -55,6 +55,40 @@ static const unsigned char ad7746_cap_filter_rate_table[][2] = {
 	{16, 62 + 1}, {13, 77 + 1}, {11, 92 + 1}, {9, 110 + 1},
 };
 
+static int ad7746_store_cap_filter_rate_setup(struct ad7746_dev *chip,
+					      int val)
+{
+	int i;
+	struct ad7746_config c = chip->setup.config;
+
+	for (i = 0; i < ARRAY_SIZE(ad7746_cap_filter_rate_table); i++)
+		if (val >= ad7746_cap_filter_rate_table[i][0])
+			break;
+
+	if (i >= ARRAY_SIZE(ad7746_cap_filter_rate_table))
+		i = ARRAY_SIZE(ad7746_cap_filter_rate_table) - 1;
+
+	c.capf = i;
+	return ad7746_set_config(chip, c);
+}
+
+static int ad7746_store_vt_filter_rate_setup(struct ad7746_dev *chip,
+					     int val)
+{
+	int i;
+	struct ad7746_config c = chip->setup.config;
+
+	for (i = 0; i < ARRAY_SIZE(ad7746_vt_filter_rate_table); i++)
+		if (val >= ad7746_vt_filter_rate_table[i][0])
+			break;
+
+	if (i >= ARRAY_SIZE(ad7746_vt_filter_rate_table))
+		i = ARRAY_SIZE(ad7746_vt_filter_rate_table) - 1;
+
+	c.vtf = i;
+	return ad7746_set_config(chip, c);
+}
+
 // perform channel selection
 static int ad7746_select_channel(void *device, struct iio_ch_info *ch_info)
 {
@@ -82,7 +116,20 @@ static int ad7746_select_channel(void *device, struct iio_ch_info *ch_info)
 		}
 		break;
 	case IIO_VOLTAGE:
+		if (ch_info->ch_num == 1)
+			vt.vtmd = AD7746_VTMD_VDD_MON;
+		else
+			vt.vtmd = AD7746_VIN_EXT_VIN;
+		vt.vten = true;
+		cap.capen = false;
+		idx = desc->setup.config.vtf;
+		delay = ad7746_cap_filter_rate_table[idx][1];
+		break;
 	case IIO_TEMP:
+		if (ch_info->ch_num == 1)
+			vt.vtmd = AD7746_VTMD_EXT_TEMP;
+		else
+			vt.vtmd = AD7746_VTMD_INT_TEMP;
 		vt.vten = true;
 		cap.capen = false;
 		idx = desc->setup.config.vtf;
@@ -172,7 +219,6 @@ static ssize_t ad7746_iio_read_raw(void *device, char *buf, size_t len,
 static ssize_t ad7746_iio_read_scale(void *device, char *buf, size_t len,
 					const struct iio_ch_info *channel, intptr_t priv)
 {
-	struct ad7746_dev *desc = (struct ad7746_dev *)device;
 	int32_t valt;
 	int32_t vals[2];
 
@@ -208,6 +254,56 @@ static ssize_t ad7746_iio_read_offset(void *device, char *buf, size_t len,
 	return iio_format_value(buf, len, IIO_VAL_INT, 1, &value);
 }
 
+static ssize_t ad7746_iio_write_offset(void *device, char *buf,
+		size_t len, const struct iio_ch_info *channel, intptr_t priv)
+{
+	struct ad7746_dev *desc = (struct ad7746_dev *)device;
+	int32_t val, ret;
+	bool en;
+	uint8_t code;
+
+	ret = iio_parse_value(buf, IIO_VAL_INT, &val, NULL);
+	if (ret < 0)
+		return ret;
+
+	if (val < 0 || val > 43008000) { /* 21pF */
+		return -EINVAL;
+	}
+
+	/*
+	* CAPDAC Scale = 21pF_typ / 127
+	* CIN Scale = 8.192pF / 2^24
+	* Offset Scale = CAPDAC Scale / CIN Scale = 338646
+	*/
+
+	val /= 338646;
+
+	en = val > 0;
+	code = en ? val : 0;
+	desc->capdac[channel->ch_num][channel->differential] = 
+		en ? (code & AD7746_CAPDAC_DACP_MSK) | AD7746_CAPDAC_DACEN_MSK : 0;
+
+	en = (bool)(desc->capdac[channel->ch_num][0] & AD7746_CAPDAC_DACEN_MSK);
+	code = desc->capdac[channel->ch_num][0] & AD7746_CAPDAC_DACP_MSK;
+	ret = ad7746_set_cap_dac_a(desc, en, code);
+	if (ret < 0)
+		return ret;
+
+	en = (bool)(desc->capdac[channel->ch_num][1] & AD7746_CAPDAC_DACEN_MSK);
+	code = desc->capdac[channel->ch_num][1] &AD7746_CAPDAC_DACP_MSK;
+	ret = ad7746_set_cap_dac_b(desc, en, code);
+	if (ret < 0)
+		return ret;
+	if (ret < 0)
+		return ret;
+
+	desc->capdac_set = channel->ch_num;
+
+	ret = 0;
+
+	return len;
+}
+
 static ssize_t ad7746_iio_read_samp_freq(void *device, char *buf, size_t len,
 					const struct iio_ch_info *channel, intptr_t priv)
 {
@@ -219,7 +315,7 @@ static ssize_t ad7746_iio_read_samp_freq(void *device, char *buf, size_t len,
 		value = ad7746_cap_filter_rate_table[desc->setup.config.capf][0];
 		break;
 	case IIO_VOLTAGE:
-		value = ad7746_cap_filter_rate_table[desc->setup.config.vtf][0];
+		value = ad7746_vt_filter_rate_table[desc->setup.config.vtf][0];
 		break;
 	default:
 		return -EINVAL;
@@ -227,6 +323,34 @@ static ssize_t ad7746_iio_read_samp_freq(void *device, char *buf, size_t len,
 	}
 
 	return iio_format_value(buf, len, IIO_VAL_INT, 1, &value);
+}
+
+static ssize_t ad7746_iio_write_samp_freq(void *device, char *buf,
+		size_t len, const struct iio_ch_info *channel, intptr_t priv)
+{
+	struct ad7746_dev *desc = (struct ad7746_dev *)device;
+	int32_t val, val2, ret;
+
+	ret = iio_parse_value(buf, IIO_VAL_INT, &val, &val2);
+	if (ret < 0)
+		return ret;
+
+	if (val2) {
+		return -EINVAL;
+	}
+
+	switch (channel->type) {
+	case IIO_CAPACITANCE:
+		ret = ad7746_store_cap_filter_rate_setup(desc, val);
+		break;
+	case IIO_VOLTAGE:
+		ret = ad7746_store_vt_filter_rate_setup(desc, val);
+		break;
+	default:
+		ret = -EINVAL;
+	}
+
+	return ret;
 }
 
 static struct iio_attribute ad7746_iio_vin_attrs[] = {
@@ -245,7 +369,7 @@ static struct iio_attribute ad7746_iio_vin_attrs[] = {
 		.name = "sampling_frequency",
 		.shared = IIO_SHARED_BY_TYPE,
 		.show = ad7746_iio_read_samp_freq,
-		.store = NULL
+		.store = ad7746_iio_write_samp_freq
 	},
 	END_ATTRIBUTES_ARRAY
 };
@@ -265,13 +389,13 @@ static struct iio_attribute ad7746_iio_cin_attrs[] = {
 	{
 		.name = "offset",
 		.show = ad7746_iio_read_offset,
-		.store = NULL
+		.store = ad7746_iio_write_offset
 	},
 	{
 		.name = "sampling_frequency",
 		.shared = IIO_SHARED_BY_TYPE,
 		.show = ad7746_iio_read_samp_freq,
-		.store = NULL
+		.store = ad7746_iio_write_samp_freq
 	},
 	{
 		.name = "calibscale",
@@ -310,7 +434,7 @@ enum ad7746_chan {
 static struct iio_channel ad7746_channels[] = {
 	[VIN] = {
 		.ch_type = IIO_VOLTAGE,
-		.indexed = 1,
+		.indexed = true,
 		.channel = 0,
 		.attributes = ad7746_iio_vin_attrs,
 		.address = AD7746_VIN_EXT_VIN,
@@ -318,7 +442,7 @@ static struct iio_channel ad7746_channels[] = {
 	},
 	[VIN_VDD] = {
 		.ch_type = IIO_VOLTAGE,
-		.indexed = 1,
+		.indexed = true,
 		.channel = 1,
 		.extend_name = "supply",
 		.attributes = ad7746_iio_vin_attrs,
@@ -327,7 +451,7 @@ static struct iio_channel ad7746_channels[] = {
 	},
 	[TEMP_INT] = {
 		.ch_type = IIO_TEMP,
-		.indexed = 1,
+		.indexed = true,
 		.channel = 0,
 		.attributes = ad7746_iio_temp_attrs,
 		.address = AD7746_VTMD_INT_TEMP,
@@ -335,7 +459,7 @@ static struct iio_channel ad7746_channels[] = {
 	},
 	[TEMP_EXT] = {
 		.ch_type = IIO_TEMP,
-		.indexed = 1,
+		.indexed = true,
 		.channel = 1,
 		.attributes = ad7746_iio_temp_attrs,
 		.address = AD7746_VTMD_EXT_TEMP,
@@ -343,15 +467,15 @@ static struct iio_channel ad7746_channels[] = {
 	},
 	[CIN1] = {
 		.ch_type = IIO_CAPACITANCE,
-		.indexed = 1,
+		.indexed = true,
 		.channel = 0,
 		.attributes = ad7746_iio_cin_attrs,
 		.ch_out = false,
 	},
 	[CIN1_DIFF] = {
 		.ch_type = IIO_CAPACITANCE,
-		.diferential = 1,
-		.indexed = 1,
+		.diferential = true,
+		.indexed = true,
 		.channel = 0,
 		.channel2 = 2,
 		.attributes = ad7746_iio_cin_attrs,
@@ -360,7 +484,7 @@ static struct iio_channel ad7746_channels[] = {
 	},
 	[CIN2] = {
 		.ch_type = IIO_CAPACITANCE,
-		.indexed = 1,
+		.indexed = true,
 		.channel = 1,
 		.attributes = ad7746_iio_cin_attrs,
 		.address = AD7746_CAPSETUP_CIN2_MSK,
@@ -368,8 +492,8 @@ static struct iio_channel ad7746_channels[] = {
 	},
 	[CIN2_DIFF] = {
 		.ch_type = IIO_CAPACITANCE,
-		.diferential = 1,
-		.indexed = 1,
+		.diferential = true,
+		.indexed = true,
 		.channel = 1,
 		.channel2 = 3,
 		.attributes = ad7746_iio_cin_attrs,
